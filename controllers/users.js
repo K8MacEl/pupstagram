@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const SECRET = process.env.SECRET;
+const PostModel = require('../models/post')
 
 const { v4: uuidv4 } = require('uuid');
 // uuid, helps generate our unique ids
@@ -13,8 +14,27 @@ const BUCKET_NAME = process.env.S3_BUCKET
 
 module.exports = {
   signup,
-  login
+  login,
+  profile
 };
+
+async function profile(req, res){
+  try {
+    // Find the user by there username
+    // from the params
+    const user = await User.findOne({username: req.params.username})
+    // if we don't find a user send back user not found
+    if (!user) return  res.status(404).json({error: 'User not found'})
+
+    // Find all of the posts for user and respond to the client
+    const posts = await PostModel.find({user: user._id}).populate('user').exec()
+
+    res.status(200).json({data: posts, user: user})
+  } catch(err){
+    console.log(err)
+    res.status(400).json({err})
+  }
+}
 
 async function signup(req, res) {
   console.log(req.body, req.file)
